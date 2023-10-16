@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Realistic 3D Objects</title>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: Arial, sans-serif; 
+            background-color: #FFD1DC; /* Background warna soft pink */
+        }
+        canvas { 
+            display: block; 
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        #startButton {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: #ffffff;
+        }
+        #stopButton {
+            background: linear-gradient(135deg, #FF5252, #D32F2F);
+            color: #ffffff;
+        }
+        #reverseButton {
+            background: linear-gradient(135deg, #FFEB3B, #FFC107);
+            color: #333;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+    <button id="reverseButton">Reverse Movement</button>
+
+    <script src="https://threejs.org/build/three.js"></script>
+    <script>
+        // Inisialisasi scene, camera, dan renderer
+        var scene = new THREE.Scene();
+
+        // Menambahkan kabut ke scene
+        scene.fog = new THREE.FogExp2(0xaaaaaa, 0.025);
+
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        var renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xFFD1DC, 1);  // Mengubah warna latar belakang renderer menjadi soft pink
+        renderer.shadowMap.enabled = true; // Mengaktifkan shadow mapping
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Jenis bayangan
+        document.body.appendChild(renderer.domElement);
+
+        // Resizing
+        window.addEventListener('resize', function() {
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+
+        var cubeTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/crate.gif');
+        // Kubus dengan tekstur
+        var cubeGeometry = new THREE.BoxGeometry();
+        var cubeMaterial = new THREE.MeshLambertMaterial({ map: cubeTexture });
+        var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.castShadow = true; 
+        cube.receiveShadow = true; 
+        scene.add(cube);
+
+        // Bola dengan warna dasar
+        var sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+        var sphereMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
+        var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.x = -3;
+        sphere.castShadow = true;
+        sphere.receiveShadow = true;
+        scene.add(sphere);
+
+        // Torus dengan material phong
+        var torusGeometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+        var torusMaterial = new THREE.MeshPhongMaterial({ color: 0x00FF00 });
+        var torus = new THREE.Mesh(torusGeometry, torusMaterial);
+        torus.position.x = 3;
+        torus.castShadow = true;
+        torus.receiveShadow = true;
+        scene.add(torus);
+
+        // Penambahan sumber cahaya
+        var ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Pencahayaan umum
+        scene.add(ambientLight);
+
+        var hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1); // Pencahayaan dari atas ke bawah
+        scene.add(hemisphereLight);
+
+        var directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+        directionalLight.position.set(3, 0, 0); // Cahaya dari samping kanan
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 512;
+        directionalLight.shadow.mapSize.height = 512;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 50;
+        scene.add(directionalLight);
+
+        camera.position.z = 5;
+
+        // Variabel global untuk mengecek apakah animasi sedang berjalan
+        var isAnimating = true;
+
+        var movementDirection = 1; // Penambahan variabel untuk arah gerak
+
+        // Fungsi animasi
+        var animate = function () {
+            if (!isAnimating) return;  // Jika tidak diizinkan untuk beranimasi, keluar dari fungsi
+
+            requestAnimationFrame(animate);
+
+            // Menggandakan direction ke rotasi
+            cube.rotation.x += 0.01 * movementDirection;
+            cube.rotation.y += 0.01 * movementDirection;
+
+            sphere.rotation.x += 0.01 * movementDirection;
+            sphere.rotation.y -= 0.01 * movementDirection;
+
+            torus.rotation.x -= 0.01 * movementDirection;
+            torus.rotation.y += 0.01 * movementDirection;
+
+            renderer.render(scene, camera);
+        };
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            if (!isAnimating) {
+                isAnimating = true;
+                animate(); // Mulai animasi
+            }
+        });
+
+        // Listener untuk tombol Reverse Movement
+        document.getElementById('reverseButton').addEventListener('click', function() {
+            movementDirection *= -1; // Mengubah arah gerakan
+        });
+
+        document.getElementById('stopButton').addEventListener('click', function() {
+            isAnimating = false; // Berhenti animasi
+        });
+
+        animate();
+    </script>
+</body>
+</html>
